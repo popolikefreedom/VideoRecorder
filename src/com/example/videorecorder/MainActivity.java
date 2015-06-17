@@ -44,7 +44,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		setContentView(R.layout.activity_main);
 		filePath = getFilePath();
 		findViews();
-//		openCamera();
+		openCamera();
 	}
 
 	private String getFilePath() {
@@ -83,6 +83,7 @@ public class MainActivity extends Activity implements OnClickListener {
 			Vlog.i(TAG, "mVideoWidth : " + mVideoWidth + "," + mVideoHeight);
 			// cameraParameters.set("orientation", "portrait");
 			mCamera.setDisplayOrientation(90);
+			mCamera.unlock();
 		}
 
 	}
@@ -182,9 +183,13 @@ public class MainActivity extends Activity implements OnClickListener {
 	private void videoRecordStart() {
 		mMediaRecorder = new MediaRecorder();// 创建mediarecorder对象
 		// 设置录制视频源为Camera(相机)
+		mMediaRecorder.setCamera(mCamera);
 		mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+		
+		mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 		// 设置录制完成后视频的封装格式THREE_GPP为3gp.MPEG_4为mp4
-		mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+		mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+		mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 		// 设置录制的视频编码h263 h264
 		mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
 		// 设置录制的视频帧率。必须放在设置编码和格式的后面，否则报错
