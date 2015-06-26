@@ -10,11 +10,15 @@ import android.hardware.Camera.Size;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageButton;
 
 import com.example.videorecorder.util.Vlog;
 
@@ -22,7 +26,8 @@ public class MainActivity extends Activity implements OnClickListener {
 
 	private static final String TAG = "MainActivity";
 
-	private Button mRecord;
+	private ImageButton mRecord;
+	private Button mDelete;
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mSurfaceHolder;
 
@@ -52,8 +57,9 @@ public class MainActivity extends Activity implements OnClickListener {
 		String str = Environment.getExternalStorageDirectory()
 				.getAbsolutePath()
 				+ File.separator
-				+ "videorecord"
-				+ File.separator + time + ".3gp";
+				+ "10090"
+				+ File.separator
+				+ time + ".3gp";
 		File file = new File(str).getParentFile();
 		if (!file.exists()) {
 			file.mkdirs();
@@ -73,13 +79,16 @@ public class MainActivity extends Activity implements OnClickListener {
 			List<int[]> fpsList = cameraParameters
 					.getSupportedPreviewFpsRange();
 			List<Size> sizeList = cameraParameters.getSupportedVideoSizes();
-			Vlog.i(TAG, "fpsList.size : " + fpsList.size() + ", fps" + fpsList.get(0).length
-					+ ", sizeList.size :" + sizeList.size() + ", first size : "
-					+ sizeList.get(0).width + "," + sizeList.get(0).height);
+			Vlog.i(TAG,
+					"fpsList.size : " + fpsList.size() + ", fps"
+							+ fpsList.get(0).length + ", sizeList.size :"
+							+ sizeList.size() + ", first size : "
+							+ sizeList.get(0).width + ","
+							+ sizeList.get(0).height);
 			mVideoFps = fpsList.get(0)[1] / 1000;
 			Vlog.i(TAG, "mVideoFps : " + mVideoFps + "," + fpsList.get(0)[0]);
-			mVideoWidth = sizeList.get(1).width;
-			mVideoHeight = sizeList.get(1).height;
+			mVideoWidth = sizeList.get(0).width;
+			mVideoHeight = sizeList.get(0).height;
 			Vlog.i(TAG, "mVideoWidth : " + mVideoWidth + "," + mVideoHeight);
 			// cameraParameters.set("orientation", "portrait");
 			mCamera.setDisplayOrientation(90);
@@ -90,12 +99,14 @@ public class MainActivity extends Activity implements OnClickListener {
 
 	private void findViews() {
 		mSurfaceView = (SurfaceView) findViewById(R.id.main_surface_View);
-		mRecord = (Button) findViewById(R.id.main_record);
+		mRecord = (ImageButton) findViewById(R.id.main_record);
+		mDelete = (Button) findViewById(R.id.main_delete);
 
 		mSurfaceHolder = mSurfaceView.getHolder();
 		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		mRecord.setOnClickListener(this);
+		// mDelete.setOnClickListener(this);
 	}
 
 	// @Override
@@ -155,23 +166,48 @@ public class MainActivity extends Activity implements OnClickListener {
 				stopRecording();
 			}
 			break;
+		case R.id.main_delete:
+			deleteVideos();
+			break;
+		}
+	}
+
+	private void deleteVideos() {
+		String str = Environment.getExternalStorageDirectory()
+				.getAbsolutePath() + File.separator + "10090";
+		File parentFile = new File(str);
+		if (!parentFile.exists()) {
+			return;
+		}
+
+		File[] files = parentFile.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			File file = files[i];
+			if (file != null) {
+				file.delete();
+			}
 		}
 	}
 
 	public synchronized void setRecording(boolean isRecording) {
 		this.isRecording = isRecording;
+		if (isRecording) {
+			mRecord.setImageResource(R.drawable.btn_stop);
+		} else {
+			mRecord.setImageResource(R.drawable.btn_recod_point);
+		}
 	}
 
 	public void startRecording() {
 		Vlog.i(TAG, "startRecording");
 		setRecording(true);
-		videoRecordStart();
+		// videoRecordStart();
 	}
 
 	public void stopRecording() {
 		Vlog.i(TAG, "stopRecording");
 		setRecording(false);
-		videoRecordStop();
+		// videoRecordStop();
 	}
 
 	@Override
@@ -185,7 +221,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		// 设置录制视频源为Camera(相机)
 		mMediaRecorder.setCamera(mCamera);
 		mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-		
+
 		mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 		// 设置录制完成后视频的封装格式THREE_GPP为3gp.MPEG_4为mp4
 		mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
@@ -195,8 +231,8 @@ public class MainActivity extends Activity implements OnClickListener {
 		// 设置录制的视频帧率。必须放在设置编码和格式的后面，否则报错
 		mMediaRecorder.setVideoFrameRate(20);
 		// 设置视频录制的分辨率。必须放在设置编码和格式的后面，否则报错
-		mMediaRecorder.setVideoSize(1920, 1080);
-
+		mMediaRecorder.setVideoSize(mVideoWidth, mVideoHeight);
+		mMediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);
 		mMediaRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
 		// 设置视频文件输出的路径
 		mMediaRecorder.setOutputFile(filePath);
@@ -220,5 +256,36 @@ public class MainActivity extends Activity implements OnClickListener {
 			mMediaRecorder.stop();
 			mMediaRecorder.release();
 		}
+
 	}
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent event) {
+		Vlog.i(TAG, "dispatchKeyEvent" + event.getAction());
+		int keyCode = event.getAction();
+		if (keyCode == KeyEvent.KEYCODE_HOME) {
+			return true;
+		}
+		return super.dispatchKeyEvent(event);
+	}
+	
+	
+	
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent ev) {
+		Vlog.i(TAG, "onKeyDown" + ev.getAction());
+		return super.dispatchTouchEvent(ev);
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		Vlog.i(TAG, "onKeyDown" + event.getAction());
+		if (KeyEvent.KEYCODE_HOME == keyCode) {
+			Vlog.i(TAG, "HOME has been pressed yet ...");
+			// android.os.Process.killProcess(android.os.Process.myPid());
+		}
+		return super.onKeyDown(keyCode, event);
+
+	}
+
 }

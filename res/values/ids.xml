@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    
 
-    <item name="main_surface_View" type="id" />
-    <item name="main_record" type="id" /></resources>
+    <item name="main_surface_View" type="id"/>
+    <item name="main_record" type="id"/>
+    <item name="main_delete" type="id"/>
+    <item name="main_video" type="id" />
+
+</resources>

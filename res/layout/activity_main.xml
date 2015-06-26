@@ -1,9 +1,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="com.example.videorecorder.MainActivity" >
+    android:background="@color/black"
+    android:orientation="vertical" >
 
     <SurfaceView
         android:id="@id/main_surface_View"
@@ -11,18 +10,57 @@
         android:layout_height="wrap_content"
         android:layout_weight="1" />
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/white" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+        android:orientation="horizontal"
+        android:padding="5dp" >
 
-        <Button
+        <View
+            android:layout_width="@dimen/video_image_width"
+            android:layout_height="@dimen/video_image_width" 
+            android:background="@color/black"
+            >
+        </View>
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1" >
+        </View>
+
+        <ImageButton
             android:id="@id/main_record"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" 
+            android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:text="@string/begin_recorder"
-            />
+            android:background="@drawable/btn_record_selector"
+            android:src="@drawable/btn_recod_point" />
+
+        <Button
+            android:id="@id/main_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="@string/delete_recorder"
+            android:visibility="gone" />
+
+        <View
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@id/main_video"
+            android:layout_width="@dimen/video_image_width"
+            android:layout_height="@dimen/video_image_width"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/video_image_default" />
     </LinearLayout>
 
 </LinearLayout>
