@@ -1,5 +1,7 @@
 package com.example.videorecorder.core;
 
+import com.example.videorecorder.util.Vlog;
+
 import android.content.Context;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -20,11 +22,13 @@ public class TelephoneControll {
 	
 	
 	public void startInterceptPhone(){
+		Vlog.i(TAG, "startInterceptPhone");
 		mTelephonyManager.listen(myPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
 	}
 	
 	
 	public void stopInterceptPhone(){
+		Vlog.i(TAG, "stopInterceptPhone");
 		mTelephonyManager.listen(myPhoneStateListener, PhoneStateListener.LISTEN_NONE);
 	}
 }

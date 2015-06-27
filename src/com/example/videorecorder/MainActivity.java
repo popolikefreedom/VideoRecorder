@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
 import android.media.MediaRecorder;
@@ -16,24 +17,29 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 
+import com.example.videorecorder.core.TelephoneControll;
+import com.example.videorecorder.util.Utils;
 import com.example.videorecorder.util.Vlog;
 
-public class MainActivity extends Activity implements OnClickListener {
+public class MainActivity extends Activity implements OnClickListener, SurfaceHolder.Callback {
 
 	private static final String TAG = "MainActivity";
 
 	private ImageButton mRecord;
+	private ImageButton mPlayLast;
+	
 	private Button mDelete;
+	
+	
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mSurfaceHolder;
 
 	private Camera mCamera;
 
-	private String filePath;
+	private String mFilePath;
 
 	private MediaRecorder mMediaRecorder;
 
@@ -42,15 +48,32 @@ public class MainActivity extends Activity implements OnClickListener {
 	private int mVideoFps;
 	private int mVideoWidth;
 	private int mVideoHeight;
-
+	
+	
+	private TelephoneControll mTelephoneControll;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		filePath = getFilePath();
+		mFilePath = getFilePath();
 		findViews();
 		openCamera();
+		mTelephoneControll = new TelephoneControll(this);
+		mTelephoneControll.startInterceptPhone();
 	}
+	
+	
+	
+	
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		mTelephoneControll.stopInterceptPhone();
+	}
+
+
+
 
 	private String getFilePath() {
 		long time = System.currentTimeMillis();
@@ -92,7 +115,6 @@ public class MainActivity extends Activity implements OnClickListener {
 			Vlog.i(TAG, "mVideoWidth : " + mVideoWidth + "," + mVideoHeight);
 			// cameraParameters.set("orientation", "portrait");
 			mCamera.setDisplayOrientation(90);
-			mCamera.unlock();
 		}
 
 	}
@@ -101,59 +123,61 @@ public class MainActivity extends Activity implements OnClickListener {
 		mSurfaceView = (SurfaceView) findViewById(R.id.main_surface_View);
 		mRecord = (ImageButton) findViewById(R.id.main_record);
 		mDelete = (Button) findViewById(R.id.main_delete);
+		mPlayLast = (ImageButton) findViewById(R.id.main_video);
 
 		mSurfaceHolder = mSurfaceView.getHolder();
 		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		mSurfaceHolder.addCallback(this);
 
 		mRecord.setOnClickListener(this);
+		mPlayLast.setOnClickListener(this);
 		// mDelete.setOnClickListener(this);
 	}
 
-	// @Override
-	// public void surfaceChanged(SurfaceHolder holder, int format, int width,
-	// int height) {
-	// Vlog.i(TAG, "surfaceChanged");
-	// if (mSurfaceHolder.getSurface() == null) {
-	// // preview surface does not exist
-	// return;
-	// }
-	// // stop preview before making changes
-	// try {
-	// mCamera.stopPreview();
-	// } catch (Exception e) {
-	// // ignore: tried to stop a non-existent preview
-	// }
-	//
-	// // make any resize, rotate or reformatting changes here
-	// // start preview with new settings
-	// try {
-	// mCamera.setPreviewDisplay(mSurfaceHolder);
-	// mCamera.startPreview();
-	// } catch (Exception e) {
-	// Vlog.i(TAG, "Error starting camera preview: " + e.getMessage());
-	// }
-	//
-	// }
-	//
-	// @Override
-	// public void surfaceCreated(SurfaceHolder holder) {
-	// Vlog.i(TAG, "surfaceCreated");
-	// openCamera();
-	// if (mCamera != null) {
-	// try {
-	// mCamera.setPreviewDisplay(mSurfaceHolder);
-	// mCamera.startPreview();
-	// } catch (IOException e) {
-	// // TODO Auto-generated catch block
-	// e.printStackTrace();
-	// }
-	// }
-	// }
-	//
-	// @Override
-	// public void surfaceDestroyed(SurfaceHolder holder) {
-	// Vlog.i(TAG, "surfaceDestroyed");
-	// }
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+		Vlog.i(TAG, "surfaceChanged");
+		if (mSurfaceHolder.getSurface() == null) {
+			// preview surface does not exist
+			return;
+		}
+		// stop preview before making changes
+		try {
+			mCamera.stopPreview();
+		} catch (Exception e) {
+			// ignore: tried to stop a non-existent preview
+		}
+
+		// make any resize, rotate or reformatting changes here
+		// start preview with new settings
+		try {
+			mCamera.setPreviewDisplay(mSurfaceHolder);
+			mCamera.startPreview();
+		} catch (Exception e) {
+			Vlog.i(TAG, "Error starting camera preview: " + e.getMessage());
+		}
+
+	}
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		Vlog.i(TAG, "surfaceCreated");
+		openCamera();
+		if (mCamera != null) {
+			try {
+				mCamera.setPreviewDisplay(mSurfaceHolder);
+				mCamera.startPreview();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		Vlog.i(TAG, "surfaceDestroyed");
+	}
 
 	@Override
 	public void onClick(View v) {
@@ -169,6 +193,11 @@ public class MainActivity extends Activity implements OnClickListener {
 		case R.id.main_delete:
 			deleteVideos();
 			break;
+		case R.id.main_video:
+			Utils.playVideo(mFilePath, this);
+			break;
+			
+			
 		}
 	}
 
@@ -201,13 +230,15 @@ public class MainActivity extends Activity implements OnClickListener {
 	public void startRecording() {
 		Vlog.i(TAG, "startRecording");
 		setRecording(true);
-		// videoRecordStart();
+		mCamera.unlock();
+		videoRecordStart();
 	}
 
 	public void stopRecording() {
 		Vlog.i(TAG, "stopRecording");
 		setRecording(false);
-		// videoRecordStop();
+		mCamera.lock();
+		videoRecordStop();
 	}
 
 	@Override
@@ -233,9 +264,9 @@ public class MainActivity extends Activity implements OnClickListener {
 		// 设置视频录制的分辨率。必须放在设置编码和格式的后面，否则报错
 		mMediaRecorder.setVideoSize(mVideoWidth, mVideoHeight);
 		mMediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);
-		mMediaRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
+		//mMediaRecorder.setPreviewDisplay(mSurfaceHolder.getSurface());
 		// 设置视频文件输出的路径
-		mMediaRecorder.setOutputFile(filePath);
+		mMediaRecorder.setOutputFile(mFilePath);
 		try {
 			// 准备录制
 			mMediaRecorder.prepare();
@@ -256,7 +287,10 @@ public class MainActivity extends Activity implements OnClickListener {
 			mMediaRecorder.stop();
 			mMediaRecorder.release();
 		}
-
+		Bitmap bitmap = Utils.createVideoThumbnail(mFilePath, 0 , 0);
+		if(bitmap != null){
+			mPlayLast.setImageBitmap(bitmap);
+		}
 	}
 
 	@Override
