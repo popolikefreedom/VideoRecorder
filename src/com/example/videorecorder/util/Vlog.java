@@ -11,4 +11,5 @@ public class Vlog {
 		if (DEBUG)
 			Log.i(tag, msg);
 	}
+
 }

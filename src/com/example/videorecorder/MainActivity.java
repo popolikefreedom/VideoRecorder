@@ -11,6 +11,7 @@ import android.hardware.Camera.Size;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -19,10 +20,12 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import com.example.videorecorder.core.TelephoneControll;
 import com.example.videorecorder.util.Utils;
 import com.example.videorecorder.util.Vlog;
+import com.umeng.analytics.MobclickAgent;
 
 public class MainActivity extends Activity implements OnClickListener, SurfaceHolder.Callback {
 
@@ -33,6 +36,7 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 	
 	private Button mDelete;
 	
+	private TextView mTimer;
 	
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mSurfaceHolder;
@@ -50,12 +54,18 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 	private int mVideoHeight;
 	
 	
+	private CrashHandler mCrashHandler;
+	
 	private TelephoneControll mTelephoneControll;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		mCrashHandler = CrashHandler.getInstance();
+		mCrashHandler.init(this);
+		
 		mFilePath = getFilePath();
 		findViews();
 		openCamera();
@@ -66,6 +76,24 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 	
 	
 	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		MobclickAgent.onResume(this);
+	}
+
+
+
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		MobclickAgent.onPause(this);
+	}
+
+
+
+
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
@@ -82,7 +110,7 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 				+ File.separator
 				+ "10090"
 				+ File.separator
-				+ time + ".3gp";
+				+ time + ".mp4";
 		File file = new File(str).getParentFile();
 		if (!file.exists()) {
 			file.mkdirs();
@@ -124,7 +152,8 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 		mRecord = (ImageButton) findViewById(R.id.main_record);
 		mDelete = (Button) findViewById(R.id.main_delete);
 		mPlayLast = (ImageButton) findViewById(R.id.main_video);
-
+		mTimer = (TextView) findViewById(R.id.main_timer);
+		
 		mSurfaceHolder = mSurfaceView.getHolder();
 		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		mSurfaceHolder.addCallback(this);
@@ -244,6 +273,7 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 	@Override
 	public void onBackPressed() {
 		super.onBackPressed();
+		MobclickAgent.onKillProcess(this);
 		android.os.Process.killProcess(android.os.Process.myPid());
 	}
 
@@ -260,7 +290,8 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 		// 设置录制的视频编码h263 h264
 		mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
 		// 设置录制的视频帧率。必须放在设置编码和格式的后面，否则报错
-		mMediaRecorder.setVideoFrameRate(20);
+		mMediaRecorder.setVideoFrameRate(mVideoFps
+				);
 		// 设置视频录制的分辨率。必须放在设置编码和格式的后面，否则报错
 		mMediaRecorder.setVideoSize(mVideoWidth, mVideoHeight);
 		mMediaRecorder.setVideoEncodingBitRate(5 * 1024 * 1024);
@@ -279,6 +310,7 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		startCounter();
 	}
 
 	private void videoRecordStop() {
@@ -291,6 +323,7 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 		if(bitmap != null){
 			mPlayLast.setImageBitmap(bitmap);
 		}
+		stopCounter();
 	}
 
 	@Override
@@ -321,5 +354,29 @@ public class MainActivity extends Activity implements OnClickListener, SurfaceHo
 		return super.onKeyDown(keyCode, event);
 
 	}
-
+	
+	private int timeCountSecond = 0;
+	Handler mHandler = new Handler();
+	
+	Runnable TimerTask = new Runnable() {
+		@Override
+		public void run() {
+			timeCountSecond ++;
+			String format = "%02d:%02d:%02d";
+			mTimer.setText(String.format(format, timeCountSecond / 3600, (timeCountSecond % 3600)/60,  timeCountSecond % 60));
+			mHandler.postDelayed(TimerTask, 1000);
+		}
+	};
+	
+	private void stopCounter(){
+		mHandler.removeCallbacks(TimerTask);
+		timeCountSecond = 0;
+		mTimer.setVisibility(View.GONE);
+	}
+	
+	private void startCounter(){
+		mHandler.post(TimerTask);
+		mTimer.setVisibility(View.VISIBLE);
+	}
+	
 }
